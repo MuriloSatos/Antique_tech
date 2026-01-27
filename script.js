@@ -2,50 +2,70 @@ let cart = [];
 let total = 0;
 let currentCategory = "all";
 
+/* ================= ADD TO CART ================= */
 function buyProduct(button, name, price) {
     const card = button.closest(".card");
-    const stockSpan = card.querySelector(".stock-value");
-    const quantitySelect = card.querySelector(".quantity");
+    const quantity = parseInt(card.querySelector(".quantity").value);
 
-    let stock = parseInt(stockSpan.innerText);
-    let quantity = parseInt(quantitySelect.value);
-
-    if (quantity > stock) {
-        alert("Not enough stock available!");
-        return;
-    }
-
-    // Atualiza estoque
-    stock -= quantity;
-    stockSpan.innerText = stock;
-
-    // Adiciona ao carrinho
-    cart.push({ name, price, quantity });
+    cart.push({ card, name, price, quantity });
     total += price * quantity;
 
     document.getElementById("cart-count").innerText = cart.length;
     document.getElementById("cart-total").innerText = total.toFixed(2);
 
-    const li = document.createElement("li");
-    li.innerText = `${name} x${quantity} - $${(price * quantity).toFixed(2)}`;
-    document.getElementById("cart-items").appendChild(li);
-
-    // Desativa botão se acabar estoque
-    if (stock === 0) {
-        button.disabled = true;
-        button.innerText = "Out of stock";
-    }
+    renderCart();
 }
 
+/* ================= RENDER CART ================= */
+function renderCart() {
+    const ul = document.getElementById("cart-items");
+    ul.innerHTML = "";
+
+    cart.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}
+            <button onclick="removeItem(${index})">✖</button>
+        `;
+        ul.appendChild(li);
+    });
+}
+
+/* ================= REMOVE ITEM ================= */
+function removeItem(index) {
+    total -= cart[index].price * cart[index].quantity;
+    cart.splice(index, 1);
+
+    document.getElementById("cart-count").innerText = cart.length;
+    document.getElementById("cart-total").innerText = total.toFixed(2);
+
+    renderCart();
+}
+
+/* ================= CONFIRM PURCHASE ================= */
 function confirmPurchase() {
     if (cart.length === 0) {
         alert("Your cart is empty!");
         return;
     }
 
+    cart.forEach(item => {
+        const stockSpan = item.card.querySelector(".stock-value");
+        const button = item.card.querySelector("button");
+
+        let stock = parseInt(stockSpan.innerText);
+        stock -= item.quantity;
+
+        stockSpan.innerText = stock;
+
+        if (stock <= 0) {
+            button.disabled = true;
+            button.innerText = "Out of stock";
+        }
+    });
+
     alert("✅ Purchase successful!");
 
-    // Limpa carrinho
     cart = [];
     total = 0;
 
@@ -56,13 +76,14 @@ function confirmPurchase() {
     toggleCart();
 }
 
+/* ================= CART OPEN / CLOSE ================= */
 function toggleCart() {
     const cartDiv = document.getElementById("cart");
     cartDiv.style.display =
         cartDiv.style.display === "block" ? "none" : "block";
 }
 
-/* ===== FILTER + SEARCH ===== */
+/* ================= FILTER + SEARCH ================= */
 function filterProducts(category) {
     currentCategory = category;
     applyFilters();
